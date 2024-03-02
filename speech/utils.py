@@ -1,9 +1,10 @@
 from nltk.tokenize import sent_tokenize
-from google.cloud import texttospeech
+#from google.cloud import texttospeech
 import os
 import textwrap
 import subprocess
 from glob import glob
+from gtts import gTTS
 
 def text_to_speech_short(text, slides, mp3_list_file, files_dir, tts_client, logging):
     para = text.split('\n\n')
@@ -15,21 +16,46 @@ def text_to_speech_short(text, slides, mp3_list_file, files_dir, tts_client, log
         para.insert(0, first_para_sent[0])
 
     for s in para:
-        response = synthesize_speech(s, tts_client, 'Neural2-F', 1.0)
+        tts = gTTS(text=s, lang='en', slow=False)
+        chunk_audio_file_name = f'short_{hash(s)}.mp3'
+        chunk_audio_path = os.path.join(files_dir, chunk_audio_file_name)
+        
+        tts.save(chunk_audio_path)
 
         logging.info(f'Processed block text: \n\n {s}')
         logging.info("-" * 100)
 
-        chunk_audio_file_name = f'short_{hash(s)}.mp3'
-        chunk_audio = os.path.join(files_dir, f'{chunk_audio_file_name}')
-
-        with open(chunk_audio, "wb") as out:
-            out.write(response.audio_content)
-
-        if os.path.getsize(chunk_audio) == 0:
+        if os.path.getsize(chunk_audio_path) == 0:
             continue
 
         mp3_list_file.write(f'file {chunk_audio_file_name}\n')
+
+
+#def text_to_speech_short(text, slides, mp3_list_file, files_dir, tts_client, logging):
+#    para = text.split('\n\n')
+#    slides = slides['slides']
+
+#    if len(para) == len(slides):
+#        first_para_sent = sent_tokenize(para[0])
+#        para[0] = " ".join(first_para_sent[1:])
+#        para.insert(0, first_para_sent[0])
+
+#    for s in para:
+#        response = synthesize_speech(s, tts_client, 'Neural2-F', 1.0)
+
+#        logging.info(f'Processed block text: \n\n {s}')
+#        logging.info("-" * 100)
+
+#        chunk_audio_file_name = f'short_{hash(s)}.mp3'
+#        chunk_audio = os.path.join(files_dir, f'{chunk_audio_file_name}')
+
+#        with open(chunk_audio, "wb") as out:
+#            out.write(response.audio_content)
+
+#        if os.path.getsize(chunk_audio) == 0:
+#            continue
+
+#        mp3_list_file.write(f'file {chunk_audio_file_name}\n')
 
 
 def synthesize_speech(text, tts_client, voice, rate=1.0):
